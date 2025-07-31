@@ -240,5 +240,15 @@ button:hover {
 }
 .text-left {
   text-align: left;
+ }/* --- Estilos para la Opción 2 --- */
+.footer-link {
+  margin-top: 2rem;
+  font-size: 0.8rem;
+  color: var(--secondary-text-color);
+}
+
+.footer-link span {
+  text-decoration: underline;
+  cursor: pointer;
  }
 }
