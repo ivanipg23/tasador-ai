@@ -1,40 +1,32 @@
+// En el archivo: src/App.tsx
+
 import { useState } from 'react';
+import PrivacyPolicy from './PrivacyPolicy'; // Importamos la nueva página
 
 function App() {
-  // Estado para controlar qué vista mostramos: 'landing' o 'demo'
+  // Ahora tenemos 3 vistas: 'landing', 'demo' y 'privacy'
   const [view, setView] = useState('landing');
   
-  // Estados para el formulario de la demo
   const [description, setDescription] = useState('');
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Función que se ejecuta al enviar el formulario
   const handleSubmit = async (e: React.FormEvent) => {
+    // ... (la función handleSubmit se queda exactamente igual que antes)
     e.preventDefault();
-    if (!description.trim()) return; // No enviar si está vacío
-
+    if (!description.trim()) return;
     setIsLoading(true);
     setError('');
     setResponse('');
-
-    // Creamos un prompt más detallado para la IA
     const fullPrompt = `Realiza una tasación de mercado estimada para el siguiente objeto: "${description}". Proporciona un rango de precios razonable y justifica brevemente tu valoración, mencionando factores clave a considerar.`;
-
     try {
       const res = await fetch('/api', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: fullPrompt }),
       });
-
-      if (!res.ok) {
-        throw new Error('La respuesta del servidor no fue válida.');
-      }
-
+      if (!res.ok) { throw new Error('La respuesta del servidor no fue válida.'); }
       const data = await res.json();
       setResponse(data.response);
     } catch (err) {
@@ -44,55 +36,91 @@ function App() {
     }
   };
 
-  // --- VISTA INICIAL (LANDING) ---
-  if (view === 'landing') {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e as any);
+    }
+  };
+
+  // --- RENDERIZADO CONDICIONAL DE VISTAS ---
+
+  // Si la vista es 'privacy', muestra la página de política de privacidad
+  if (view === 'privacy') {
+    return <PrivacyPolicy onBack={() => setView('landing')} />;
+  }
+
+  // Si la vista es 'demo', muestra la demo
+  if (view === 'demo') {
     return (
       <main className="container">
         <div className="card">
-          <h1>Tasación Instantánea con IA</h1>
-          <p>
-            Descubre el valor real de cualquier objeto en segundos.
-          </p>
-          <button onClick={() => setView('demo')}>Acceder a la Demo</button>
+          <h1>Demo Tasador.ai</h1>
+          <p>Describe con el mayor detalle posible el objeto que quieres tasar para obtener una estimación precisa.</p>
+          <form className="demo-form" onSubmit={handleSubmit}>
+            <div className="input-group">
+              <label htmlFor="descripcion">Descripción del objeto</label>
+              <textarea 
+                id="descripcion" 
+                rows={5} 
+                placeholder="Ej: Anillo de oro de 18k con un diamante de 0.5 quilates..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isLoading}
+              />
+            </div>
+            <button type="submit" disabled={isLoading}>
+              {isLoading ? 'Tasando...' : 'Obtener Tasación'}
+            </button>
+          </form>
+          {error && <p className="error">{error}</p>}
+          {isLoading && <p>La IA está analizando tu objeto, por favor espera...</p>}
+          {response && (
+            <div className="response-box">
+              <h2>Tasación Estimada:</h2>
+              <p>{response}</p>
+            </div>
+          )}
         </div>
       </main>
     );
   }
 
-  // --- VISTA DE LA DEMO ---
+  // Por defecto, muestra la vista 'landing'
   return (
     <main className="container">
       <div className="card">
-        <h1>Demo Tasador.ai</h1>
-        <p>Describe con el mayor detalle posible el objeto que quieres tasar para obtener una estimación precisa.</p>
+        <h1>Tasación Instantánea con IA</h1>
+        <p>Descubre el valor real de cualquier objeto en segundos.</p>
         
-        <form className="demo-form" onSubmit={handleSubmit}>
-          <div className="input-group">
-            <label htmlFor="descripcion">Descripción del objeto</label>
-            <textarea 
-              id="descripcion" 
-              rows={5} 
-              placeholder="Ej: Anillo de oro de 18k con un diamante de 0.5 quilates, marca Tiffany & Co., estado casi nuevo..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={isLoading}
-            />
+        {/* --- FORMULARIO DE NEWSLETTER ACTUALIZADO --- */}
+        <form name="newsletter" method="POST" data-netlify="true">
+          <input type="hidden" name="form-name" value="newsletter" />
+          <p className="newsletter-text">
+            La herramienta está en desarrollo. ¡Introduce tu email para ser el primero en saber cuándo se lanza!
+          </p>
+          <div className="newsletter-group">
+            <input type="email" name="email" placeholder="tu.email@ejemplo.com" required />
+            <button type="submit">Notificarme</button>
           </div>
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Tasando...' : 'Obtener Tasación'}
-          </button>
+          {/* --- CASILLA DE CONSENTIMIENTO --- */}
+          <div className="consent-group">
+            <input type="checkbox" name="consent" id="consent" required />
+            <label htmlFor="consent">
+              Acepto recibir comunicaciones y he leído la 
+              <span className="privacy-link" onClick={() => setView('privacy')}>
+                Política de Privacidad
+              </span>.
+            </label>
+          </div>
         </form>
+        
+        <hr className="divider" />
 
-        {error && <p className="error">{error}</p>}
-
-        {isLoading && <p>La IA está analizando tu objeto, por favor espera...</p>}
-
-        {response && (
-          <div className="response-box">
-            <h2>Tasación Estimada:</h2>
-            <p>{response}</p>
-          </div>
-        )}
+        <button className="secondary-button" onClick={() => setView('demo')}>
+          O accede a la Demo
+        </button>
       </div>
     </main>
   );
