@@ -1,16 +1,41 @@
-<!doctype html>
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Landing Page - Proyecto IA</title>
-  </head>
-  <body>
-    <form name="newsletter" netlify netlify-honeypot="bot-field" hidden>
-      <input type="email" name="email" />
-    </form>
+import express from 'express';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import 'dotenv/config';
+import cors from 'cors';
+import serverless from 'serverless-http'; // <-- 1. IMPORTAMOS el paquete nuevo
+
+const app = express();
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
+
+// Inicializar el cliente de Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+
+// Usamos un 'Router' de Express para manejar las rutas
+const router = express.Router();
+router.post('/', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'El prompt es requerido' });
+    }
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
     
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+    res.json({ response: text });
+  } catch (error) {
+    console.error("Error en la llamada a la API de Gemini:", error);
+    res.status(500).json({ error: 'Error al contactar con la API de Gemini' });
+  }
+});
+
+// Le decimos a nuestra app que use el router en la ruta específica que Netlify utiliza
+app.use('/.netlify/functions/index', router);
+
+// <-- 2. EXPORTAMOS la app 'envuelta' en el handler de serverless
+export const handler = serverless(app);
