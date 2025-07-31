@@ -1,36 +1,50 @@
-import express from 'express';
+// Importamos los tipos de Netlify y el cliente de Gemini
+import type { Handler, HandlerEvent } from "@netlify/functions";
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import 'dotenv/config';
-import cors from 'cors';
 
-const app = express();
+// Esta es la estructura de una función nativa de Netlify
+const handler: Handler = async (event: HandlerEvent) => {
+  // 1. Verificamos que la petición sea del tipo POST
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Método no permitido' }),
+    };
+  }
 
-// Middlewares
-app.use(express.json());
-app.use(cors());
-
-// Inicializar el cliente de Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-
-// La ruta de la API ahora es la raíz: /api/
-app.post('/api', async (req, res) => {
   try {
-    const { prompt } = req.body;
+    // 2. Obtenemos el prompt del cuerpo de la petición
+    const body = JSON.parse(event.body || '{}');
+    const prompt = body.prompt;
 
     if (!prompt) {
-      return res.status(400).json({ error: 'El prompt es requerido' });
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'El prompt es requerido' }),
+      };
     }
-
+    
+    // 3. Inicializamos y llamamos a la API de Gemini (esta parte es igual)
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     
-    res.json({ response: text });
-  } catch (error) {
-    console.error("Error en la llamada a la API de Gemini:", error);
-    res.status(500).json({ error: 'Error al contactar con la API de Gemini' });
-  }
-});
+    // 4. Devolvemos la respuesta en el formato que Netlify espera
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ response: text }),
+    };
 
-// Exportar la app para que Vercel la use como serverless function
-export default app;
+  } catch (error) {
+    console.error("Error en la función:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Error al contactar con la API de Gemini' }),
+    };
+  }
+};
+
+export { handler };
