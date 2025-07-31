@@ -1,17 +1,24 @@
-# Archivo de configuración para Netlify
+# netlify.toml - Versión Final y Robusta
 
 [build]
   command = "npm run build"
   publish = "dist"
-  functions = "api"
 
-# Regla para que la API funcione
+[functions]
+  # Le decimos a Netlify dónde buscar las funciones
+  directory = "api"
+  # --- ESTA LÍNEA ES LA CLAVE DEL ARREGLO ---
+  # Le dice al empaquetador que no trate los paquetes como "externos",
+  # forzándole a que los incluya en el paquete de la función.
+  external_node_modules = []
+
+# Redirección para la API
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/index"
   status = 200
 
-# Regla para que la página principal funcione
+# Redirección para la página principal
 [[redirects]]
   from = "/*"
   to = "/index.html"
