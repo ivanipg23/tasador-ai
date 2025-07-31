@@ -1,17 +1,15 @@
+// En el archivo: src/App.tsx
+
 import { useState } from 'react';
 import PrivacyPolicy from './PrivacyPolicy';
 
 function App() {
-  // Estado para controlar qué vista mostramos: 'landing', 'demo' o 'privacy'
   const [view, setView] = useState('landing');
-  
-  // Estados para el formulario de la demo
   const [description, setDescription] = useState('');
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Función que se ejecuta al enviar el formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return;
@@ -20,15 +18,14 @@ function App() {
     setError('');
     setResponse('');
 
-    const fullPrompt = `Realiza una tasación de mercado estimada para el siguiente objeto: "${description}". Proporciona un rango de precios razonable y justifica brevemente tu valoración, mencionando factores clave a considerar.`;
-
     try {
+      // Ahora solo enviamos la descripción en crudo. El backend se encarga del resto.
       const res = await fetch('/api', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: fullPrompt }),
+        body: JSON.stringify({ description: description }), // <- El cuerpo ahora es más simple
       });
 
       if (!res.ok) {
@@ -44,7 +41,6 @@ function App() {
     }
   };
 
-  // Función para manejar el evento de presionar una tecla
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -52,14 +48,11 @@ function App() {
     }
   };
 
-  // --- RENDERIZADO CONDICIONAL DE VISTAS ---
-
-  // Si la vista es 'privacy', muestra la página de política de privacidad
+  // El resto del archivo (las vistas de 'privacy', 'demo' y 'landing') no necesita cambios.
   if (view === 'privacy') {
     return <PrivacyPolicy onBack={() => setView('landing')} />;
   }
 
-  // Si la vista es 'demo', muestra la demo
   if (view === 'demo') {
     return (
       <main className="container">
@@ -96,7 +89,6 @@ function App() {
     );
   }
 
-  // Por defecto, muestra la vista 'landing' minimalista
   return (
     <main className="container">
       <div className="card">
@@ -104,16 +96,29 @@ function App() {
         <p>
           Descubre el valor real de cualquier objeto en segundos.
         </p>
-        
-        <button onClick={() => setView('demo')} style={{width: '100%', marginTop: '2rem'}}>
-          Acceder a la Demo
+        <form name="newsletter" method="POST" data-netlify="true">
+          <input type="hidden" name="form-name" value="newsletter" />
+          <p className="newsletter-text">
+            La herramienta está en desarrollo. ¡Introduce tu email para ser el primero en saber cuándo se lanza!
+          </p>
+          <div className="newsletter-group">
+            <input type="email" name="email" placeholder="tu.email@ejemplo.com" required />
+            <button type="submit">Notificarme</button>
+          </div>
+          <div className="consent-group">
+            <input type="checkbox" name="consent" id="consent" required />
+            <label htmlFor="consent">
+              Acepto recibir comunicaciones y he leído la 
+              <span className="privacy-link" onClick={() => setView('privacy')}>
+                Política de Privacidad
+              </span>.
+            </label>
+          </div>
+        </form>
+        <hr className="divider" />
+        <button className="secondary-button" onClick={() => setView('demo')}>
+          O accede a la Demo
         </button>
-
-        <p className="footer-link">
-          <span onClick={() => setView('privacy')}>
-            Política de Privacidad
-          </span>
-        </p>
       </div>
     </main>
   );
