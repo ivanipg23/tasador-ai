@@ -7,6 +7,9 @@ function App() {
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +22,9 @@ function App() {
     try {
       const res = await fetch('/api', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ description: description }),
       });
 
@@ -43,11 +48,36 @@ function App() {
     }
   };
 
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewsletterStatus('submitting');
+
+    const formData = new FormData();
+    formData.append('form-name', 'newsletter');
+    formData.append('email', newsletterEmail);
+    formData.append('consent', 'on');
+
+    try {
+      const response = await fetch('/', {
+        method: 'POST',
+        headers: { "Accept": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(formData as any).toString(),
+      });
+
+      if (response.ok) {
+        setNewsletterStatus('success');
+      } else {
+        throw new Error('Error al enviar el formulario');
+      }
+    } catch (error) {
+      setNewsletterStatus('error');
+    }
+  };
+
   if (view === 'privacy') {
     return <PrivacyPolicy onBack={() => setView('landing')} />;
   }
 
-  // --- VISTA 'DEMO' (con el formulario de newsletter añadido al final) ---
   if (view === 'demo') {
     return (
       <main className="container">
@@ -76,42 +106,55 @@ function App() {
           {error && <p className="error">{error}</p>}
           {isLoading && <p>La IA está analizando tu objeto, por favor espera...</p>}
 
+          {/* --- BLOQUE MODIFICADO --- */}
+          {/* Ahora, la respuesta de la IA y el formulario de newsletter están juntos. */}
+          {/* Solo se mostrarán DESPUÉS de una tasación exitosa. */}
           {response && (
-            <div className="response-box">
-              <h2>Tasación Estimada:</h2>
-              <p>{response}</p>
-            </div>
+            <>
+              <div className="response-box">
+                <h2>Tasación Estimada:</h2>
+                <p>{response}</p>
+              </div>
+
+              <hr className="divider" />
+
+              {newsletterStatus === 'success' ? (
+                <div className="newsletter-success">
+                  <h3>¡Gracias por suscribirte!</h3>
+                  <p>Te avisaremos en cuanto la aplicación esté disponible.</p>
+                </div>
+              ) : (
+                <form name="newsletter" onSubmit={handleNewsletterSubmit} data-netlify="true">
+                  <input type="hidden" name="form-name" value="newsletter" />
+                  <p className="newsletter-text">
+                    ¿Te gusta lo que ves? ¡Suscríbete para saber cuándo lanzamos la versión completa!
+                  </p>
+                  <div className="newsletter-group">
+                    <input type="email" name="email" placeholder="tu.email@ejemplo.com" value={newsletterEmail} onChange={(e) => setNewsletterEmail(e.target.value)} required />
+                    <button type="submit" disabled={newsletterStatus === 'submitting'}>
+                      {newsletterStatus === 'submitting' ? 'Enviando...' : 'Notificarme'}
+                    </button>
+                  </div>
+                  <div className="consent-group">
+                    <input type="checkbox" name="consent" id="consent" required />
+                    <label htmlFor="consent">
+                      Acepto recibir comunicaciones y he leído la&nbsp;
+                      <span className="privacy-link" onClick={() => setView('privacy')}>
+                        Política de Privacidad
+                      </span>.
+                    </label>
+                  </div>
+                  {newsletterStatus === 'error' && <p className="error">No se pudo enviar el formulario. Inténtalo de nuevo.</p>}
+                </form>
+              )}
+            </>
           )}
-
-          <hr className="divider" />
-
-          {/* Formulario de Newsletter dentro de la Demo */}
-          <form name="newsletter" method="POST" data-netlify="true" style={{ marginTop: '2rem' }}>
-            <input type="hidden" name="form-name" value="newsletter" />
-            <p className="newsletter-text">
-              ¿Te gusta lo que ves? ¡Suscríbete para saber cuándo lanzamos la versión completa!
-            </p>
-            <div className="newsletter-group">
-              <input type="email" name="email" placeholder="tu.email@ejemplo.com" required />
-              <button type="submit">Notificarme</button>
-            </div>
-            <div className="consent-group">
-              <input type="checkbox" name="consent" id="consent" required />
-              <label htmlFor="consent">
-                Acepto recibir comunicaciones y he leído la 
-                <span className="privacy-link" onClick={() => setView('privacy')}>
-                  Política de Privacidad
-                </span>.
-              </label>
-            </div>
-          </form>
-
         </div>
       </main>
     );
   }
 
-  // --- VISTA 'LANDING' (la versión minimalista que elegiste) ---
+  // La vista 'landing' se queda igual (minimalista)
   return (
     <main className="container">
       <div className="card">
@@ -119,11 +162,9 @@ function App() {
         <p>
           Descubre el valor real de cualquier objeto en segundos.
         </p>
-        
         <button onClick={() => setView('demo')} style={{width: '100%', marginTop: '2rem'}}>
           Acceder a la Demo
         </button>
-
         <p className="footer-link">
           <span onClick={() => setView('privacy')}>
             Política de Privacidad
