@@ -1,4 +1,4 @@
-# netlify.toml - Versión Final Corregida
+# netlify.toml - Versión Simplificada
 
 [build]
   command = "npm run build"
@@ -6,19 +6,11 @@
 
 [functions]
   directory = "api"
-  external_node_modules = []
 
-# Regla para la API (esta está bien)
+# Dejamos SOLO la regla para la API.
+# Netlify es suficientemente inteligente para manejar la página de React y el formulario
+# cuando el formulario tiene un "action" específico.
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/index"
   status = 200
-
-# REGLA CORREGIDA:
-# Le decimos que solo aplique esta regla a las peticiones GET.
-# Así, las peticiones POST del formulario no serán atrapadas aquí.
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = { Method = ["GET"] } # <--- ESTA ES LA LÍNEA CLAVE

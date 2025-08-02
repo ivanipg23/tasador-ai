@@ -52,15 +52,14 @@ function App() {
     e.preventDefault();
     setNewsletterStatus('submitting');
 
-    const formData = new FormData();
-    formData.append('form-name', 'newsletter');
-    formData.append('email', newsletterEmail);
-    formData.append('consent', 'on');
+    const formData = new FormData(e.target as HTMLFormElement);
 
     try {
-      const response = await fetch('/', {
+      // --- CAMBIO CLAVE AQUÍ ---
+      // Enviamos los datos a la acción "/thank-you.html", igual que en el index.html
+      const response = await fetch('/thank-you.html', {
         method: 'POST',
-        headers: { "Accept": "application/x-www-form-urlencoded" },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams(formData as any).toString(),
       });
 
@@ -73,6 +72,7 @@ function App() {
       setNewsletterStatus('error');
     }
   };
+
 
   if (view === 'privacy') {
     return <PrivacyPolicy onBack={() => setView('landing')} />;
@@ -106,9 +106,6 @@ function App() {
           {error && <p className="error">{error}</p>}
           {isLoading && <p>La IA está analizando tu objeto, por favor espera...</p>}
 
-          {/* --- BLOQUE MODIFICADO --- */}
-          {/* Ahora, la respuesta de la IA y el formulario de newsletter están juntos. */}
-          {/* Solo se mostrarán DESPUÉS de una tasación exitosa. */}
           {response && (
             <>
               <div className="response-box">
@@ -124,7 +121,7 @@ function App() {
                   <p>Te avisaremos en cuanto la aplicación esté disponible.</p>
                 </div>
               ) : (
-                <form name="newsletter" onSubmit={handleNewsletterSubmit} data-netlify="true">
+                <form name="newsletter" method="POST" action="/thank-you.html" onSubmit={handleNewsletterSubmit} data-netlify="true" netlify-honeypot="bot-field">
                   <input type="hidden" name="form-name" value="newsletter" />
                   <p className="newsletter-text">
                     ¿Te gusta lo que ves? ¡Suscríbete para saber cuándo lanzamos la versión completa!
@@ -154,7 +151,6 @@ function App() {
     );
   }
 
-  // La vista 'landing' se queda igual (minimalista)
   return (
     <main className="container">
       <div className="card">
