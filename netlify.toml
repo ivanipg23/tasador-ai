@@ -1,25 +1,24 @@
-# netlify.toml - Versión Final y Robusta
+# netlify.toml - Versión Final Corregida
 
 [build]
   command = "npm run build"
   publish = "dist"
 
 [functions]
-  # Le decimos a Netlify dónde buscar las funciones
   directory = "api"
-  # --- ESTA LÍNEA ES LA CLAVE DEL ARREGLO ---
-  # Le dice al empaquetador que no trate los paquetes como "externos",
-  # forzándole a que los incluya en el paquete de la función.
   external_node_modules = []
 
-# Redirección para la API
+# Regla para la API (esta está bien)
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/index"
   status = 200
 
-# Redirección para la página principal
+# REGLA CORREGIDA:
+# Le decimos que solo aplique esta regla a las peticiones GET.
+# Así, las peticiones POST del formulario no serán atrapadas aquí.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  conditions = { Method = ["GET"] } # <--- ESTA ES LA LÍNEA CLAVE
